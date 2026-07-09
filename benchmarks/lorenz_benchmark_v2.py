@@ -1,5 +1,4 @@
-"""
-Ross-OS Evidence Engine — Lorenz Benchmark Harness v2
+""" Ross-OS Evidence Engine — Lorenz Benchmark Harness v2
 
 Protocol: E-BMS-001-LZ-0001-P2
 Purpose: Evaluate Geo-HEX v1.0 forecasting accuracy on Lorenz chaotic trajectories
