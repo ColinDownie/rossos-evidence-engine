@@ -1,0 +1,41 @@
+name: Ross-OS Benchmark Pipeline
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "benchmarks/**"
+      - "models/**"
+      - "protocols/**"
+      - "ci/**"
+
+jobs:
+  run-benchmark:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install numpy scipy scikit-learn
+
+      - name: Execute benchmark harness
+        run: |
+          python benchmarks/lorenz_benchmark_v2.py
+
+      - name: Upload telemetry artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: rossos-telemetry
+          path: results/**
+          retention-days: 30
