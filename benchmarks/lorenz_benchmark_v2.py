@@ -109,37 +109,54 @@ def compute_rmse(y_true, y_pred):
 def compute_lyapunov_max(trajectory, dt=0.01):
     """
     Estimate maximum Lyapunov exponent using small perturbations.
-    For Lorenz (σ=10, ρ=28, β=8/3): expected ~0.90 ± 0.05
+    Robust to endpoint slicing and solver failures.
     """
     epsilon = 1e-8
     divergences = []
-    
-    for i in range(0, len(trajectory) - 100, 100):
-        # Small perturbation
-        perturbed_state = trajectory[i] + np.random.randn(3) * epsilon
-        
-        # Re-integrate from perturbed state
-        t_span = (0, 10.0)
-        t_eval = np.linspace(0, 10.0, 1000)
-        
-        sol = solve_ivp(
-            lorenz_system,
-            t_span,
-            perturbed_state,
-            args=(LORENZ_CONFIG["sigma"], LORENZ_CONFIG["rho"], LORENZ_CONFIG["beta"]),
-            t_eval=t_eval,
-            method="RK45",
-        )
-        
-        perturbed_traj = sol.y.T
-        original_segment = trajectory[i : i + len(perturbed_traj)]
-        
-        divergence = np.linalg.norm(perturbed_traj - original_segment, axis=1)
-        divergences.extend(np.log(divergence / epsilon + 1e-10))
-    
+
+    # Re-integration window
+    reint_time = 10.0
+    n_eval = 1000
+    t_eval = np.linspace(0, reint_time, n_eval)
+
+    # Ensure we only start where the original trajectory has enough points
+    max_start = len(trajectory) - n_eval
+    if max_start <= 0:
+        return 0.0
+
+    for i in range(0, max_start + 1, 100):
+        try:
+            perturbed_state = trajectory[i] + np.random.randn(3) * epsilon
+
+            sol = solve_ivp(
+                lorenz_system,
+                (0.0, reint_time),
+                perturbed_state,
+                args=(LORENZ_CONFIG["sigma"], LORENZ_CONFIG["rho"], LORENZ_CONFIG["beta"]),
+                t_eval=t_eval,
+                method="RK45",
+            )
+
+            if not sol.success:
+                continue
+
+            perturbed_traj = sol.y.T
+            original_segment = trajectory[i : i + n_eval]
+
+            if original_segment.shape[0] != perturbed_traj.shape[0]:
+                continue
+
+            divergence = np.linalg.norm(perturbed_traj - original_segment, axis=1)
+            safe_div = np.maximum(divergence, 1e-12)
+            divergences.extend(np.log(safe_div / epsilon))
+
+        except Exception:
+            continue
+
     if divergences:
-        lyapunov = np.mean(divergences) / 10.0  # Normalize by integration time
+        lyapunov = float(np.mean(divergences) / reint_time)
         return max(0.0, lyapunov)
+
     return 0.0
 
 
