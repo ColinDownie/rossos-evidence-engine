@@ -360,7 +360,7 @@ def main():
     
     # Store trajectory
     trajectory_file = results_dir / "trajectory.csv"
-    np.savetxt(trajectory_file, trajectory, delimiter=",", header="x,y,z", comments="")
+    np.savetxt(trajectory_file, trajectory, delimiter="," , header="x,y,z", comments="")
     print(f"  ✓ trajectory.csv written ({trajectory_file.stat().st_size} bytes)")
     
     print(f"\n[{datetime.now().isoformat()}] ✅ Benchmark complete")
@@ -371,4 +371,9 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    import traceback
+    try:
+        sys.exit(main())
+    except Exception:
+        traceback.print_exc()
+        sys.exit(1)
