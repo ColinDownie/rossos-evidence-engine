@@ -19,10 +19,28 @@ import sys
 from datetime import datetime
 from pathlib import Path
 import uuid
+import logging
 
 import numpy as np
 from scipy.integrate import solve_ivp
 
+# ============================================================================
+# CI / tunables
+# ============================================================================
+# CI tunables (allow CI to reduce runtime / instability)
+REINT_TIME = float(os.getenv("ROSSOS_REINT_TIME", "10.0"))
+N_EVAL = int(os.getenv("ROSSOS_N_EVAL", "1000"))
+RNG_SEED = os.getenv("ROSSOS_RNG_SEED")
+
+logger = logging.getLogger(__name__)
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+
+# Deterministic local RNG (seedable via ROSSOS_RNG_SEED)
+rng = np.random.default_rng(int(RNG_SEED)) if RNG_SEED else np.random.default_rng()
 
 # ============================================================================
 # LORENZ SYSTEM CONFIGURATION (E-BMS-001-LZ-0001)
@@ -114,9 +132,9 @@ def compute_lyapunov_max(trajectory, dt=0.01):
     epsilon = 1e-8
     divergences = []
 
-    # Re-integration window
-    reint_time = 10.0
-    n_eval = 1000
+    # Re-integration window (tunable via env)
+    reint_time = REINT_TIME
+    n_eval = N_EVAL
     t_eval = np.linspace(0, reint_time, n_eval)
 
     # Ensure we only start where the original trajectory has enough points
@@ -126,7 +144,7 @@ def compute_lyapunov_max(trajectory, dt=0.01):
 
     for i in range(0, max_start + 1, 100):
         try:
-            perturbed_state = trajectory[i] + np.random.randn(3) * epsilon
+            perturbed_state = trajectory[i] + rng.normal(scale=epsilon, size=3)
 
             sol = solve_ivp(
                 lorenz_system,
@@ -138,19 +156,23 @@ def compute_lyapunov_max(trajectory, dt=0.01):
             )
 
             if not sol.success:
+                logger.warning(f"[Lyapunov] Solver failed at window {i}: message={getattr(sol, 'message', None)}")
                 continue
 
             perturbed_traj = sol.y.T
             original_segment = trajectory[i : i + n_eval]
 
             if original_segment.shape[0] != perturbed_traj.shape[0]:
+                logger.warning(f"[Lyapunov] Shape mismatch at window {i}: original={original_segment.shape[0]} perturbed={perturbed_traj.shape[0]}")
                 continue
 
             divergence = np.linalg.norm(perturbed_traj - original_segment, axis=1)
             safe_div = np.maximum(divergence, 1e-12)
             divergences.extend(np.log(safe_div / epsilon))
 
-        except Exception:
+        except Exception as e:
+            # Log exception briefly for CI visibility and continue
+            logger.warning(f"[Lyapunov] Exception at window {i}: {e}")
             continue
 
     if divergences:
@@ -199,8 +221,8 @@ def geo_hex_predict(trajectory, horizon, window_size=100):
         context = trajectory[i - window_size : i]
         last_state = context[-1]
         
-        # Predict: last state + small drift
-        pred = last_state + np.random.randn(3) * 0.01
+        # Predict: last state + small drift (deterministic RNG)
+        pred = last_state + rng.normal(scale=0.01, size=3)
         predictions.append(pred)
     
     predictions = np.array(predictions)
