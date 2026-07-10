@@ -1,0 +1,40 @@
+{
+  "protocol": "E-BMS-001-LZ-0001-P2",
+  "run_id": "d041476a-6126-4fba-93b3-b0bca8c1243c",
+  "timestamp": "2026-07-10T08:47:30.935521",
+  "lorenz_config": {
+    "sigma": 10.0,
+    "rho": 28.0,
+    "beta": 2.6666666666666665,
+    "dt": 0.01,
+    "steps": 100000,
+    "seed": 42,
+    "initial_state": [
+      1.0,
+      1.0,
+      1.0
+    ]
+  },
+  "generation_metadata": {
+    "generator": "scipy.integrate.solve_ivp",
+    "method": "RK45",
+    "steps": 100000,
+    "dt": 0.01,
+    "sigma": 10.0,
+    "rho": 28.0,
+    "beta": 2.6666666666666665,
+    "seed": 42
+  },
+  "horizons": [
+    1,
+    5,
+    10,
+    25,
+    50
+  ],
+  "prediction_intervals": [
+    0.68,
+    0.95,
+    0.997
+  ]
+}

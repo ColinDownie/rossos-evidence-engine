@@ -1,0 +1,22 @@
+{
+  "protocol": "E-BMS-001-LZ-0001-P2",
+  "harness": "lorenz_benchmark_v2.py",
+  "model": "geo_hex_v1.0",
+  "run_id": "d041476a-6126-4fba-93b3-b0bca8c1243c",
+  "timestamp": "2026-07-10T08:47:30.935521",
+  "seed": 42,
+  "metrics": {
+    "lyapunov_max": 1.8987361767426183,
+    "trajectory_divergence": 27.935058552999507,
+    "rmse": 12.246697837883554,
+    "correlation": 0.6245548749118321,
+    "coverage_68": 0.026653313303288267,
+    "coverage_95": 0.026653313303288267,
+    "coverage_99": 0.026653313303288267
+  },
+  "audit_trail": {
+    "python_version": "3.12.3",
+    "numpy_version": "2.5.1",
+    "validation_status": "PASS"
+  }
+}
